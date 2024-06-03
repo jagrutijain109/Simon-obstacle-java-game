@@ -1,6 +1,6 @@
 # Simon-s-Obstacle-Game
 >Welcome to the Swings Obstacle Game!
-![image](https://github.com/jagrutijain109/Simon-s-Obstacle-/assets/94118253/0b317a68-042a-455d-9702-63d02682d56d)
+
 
 ## Instructions
 Open the game in full screen (Maximize window) for the best experience.
