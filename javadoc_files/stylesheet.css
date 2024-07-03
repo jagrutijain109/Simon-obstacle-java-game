@@ -425,6 +425,9 @@ ul.preview-feature-list {
     padding: 10px 0 0 1px;
     margin:0;
 }
+.white-text{
+    -fx-text-fill: white;
+}
 .caption a:link, .caption a:visited {
     color:var(--selected-link-color);
 }

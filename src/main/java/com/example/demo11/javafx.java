@@ -2,10 +2,18 @@ package com.example.demo11;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
+import com.sun.speech.freetts.Voice;
+import com.sun.speech.freetts.VoiceManager;
+import javafx.animation.TranslateTransition;
+import javafx.scene.Node;
+import javafx.util.Duration;
+
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -22,7 +30,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 
 /**
  * This class represents the main application for Simon's Obstacle Board game.
@@ -36,10 +45,14 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
     private Stage f = new Stage();
     Label  a3;
     static Label l[];
+    private boolean isB1Active = true;
     static Label[] m;
     Label z1;
     public static TextField tf1, tf2;
-    Button b1, b2, b3,b4;
+    Button b1;
+    Button b2;
+    static Button b3;
+    static Button b4;
     TextField screen;
     TextArea score;
     Label myimage = new Label(" ");
@@ -61,13 +74,16 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
 
     static boolean executeB2Conditions = true;
 
+    private MediaPlayer mediaPlayer;
+    private Voice voice;
 
+    private SimpleBooleanProperty voiceActive;
+    private boolean voiceInitialized = false;
     @Override
     public void start(Stage primaryStage) {
         f = primaryStage;
         f.setTitle("Simon's Obstacle Board");
 
-        displayTopScores();
         // Load the image
         Image image = new Image("C:/Users/JAGRUTI/Desktop/kirabiz/demo11/cut/1.png"); // Replace with your image path
         ImageView imageView = new ImageView(image);
@@ -76,7 +92,18 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         imageView.setFitHeight(70);
 
         root = new Pane();
+
+        voiceActive = new SimpleBooleanProperty(false);
+        voiceActive.addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                startVoice();
+            } else {
+                stopVoiceFunction();
+            }
+        });
+
         tf1 = new TextField("Player 1");
+        tf1.setPromptText("Enter the player's name.");
         tf2 = new TextField("Player 2");
         screen = new TextField("Roll The Dice");
 
@@ -85,6 +112,14 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         imageView.toFront(); // Display the image on top of other elements
         Scene scene = new Scene(root, 1000, 800);
 
+
+        String musicFile = "./resources/sunrise-serenade-213616.mp3"; // Replace with your music file path
+        Media sound = new Media(new File(musicFile).toURI().toString());
+        mediaPlayer = new MediaPlayer(sound);
+        mediaPlayer.setCycleCount(MediaPlayer.INDEFINITE); // Repeat indefinitely
+        mediaPlayer.play();
+        screen.setPromptText("Enter the player's name.");
+        screen.setPromptText("enter enter enter");
         l = new Label[101];
 
     {
@@ -372,7 +407,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         z1.setLayoutY(0);
         z1.setPrefSize(200, 100);
         //change path
-        z1.setGraphic(new ImageView(new Image("C://Users//JAGRUTI//Desktop//kirabiz//demo11//cut//play.gif")));
+        z1.setGraphic(new ImageView(new Image("file:.//cut//play.gif")));
 
         screen = new TextField("Roll The Dice");
         screen.setEditable(false);
@@ -382,17 +417,45 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         screen.setStyle("-fx-background-color: black; -fx-text-fill: green;");
 
 
+//        score = new TextArea();
+//        score.setEditable(false);
+//        String content = displayTopScores();
+//        content = content.replace(",", "\n"); // Replace commas with new line characters
+//        score.setText("Score Board:\n\n" +content);
+//        score.setLayoutX(1000);
+//        score.setLayoutY(200);
+//        score.setPrefSize(200, 190);
+//        score.setWrapText(true);
+//        score.setStyle("-fx-control-inner-background: black; -fx-text-fill: white;");
         score = new TextArea();
-        score.setEditable(false);
         String content = displayTopScores();
         content = content.replace(",", "\n"); // Replace commas with new line characters
-        score.setText("Score Board:\n\n" +content);
 
+// Add a title to the score board
+        score.setText("Score Board:\n\n" + content);
+
+// Set the layout and size
         score.setLayoutX(1000);
         score.setLayoutY(200);
-        score.setPrefSize(200, 190);
+        score.setPrefSize(250, 350); // Increased size to make it more readable
+
+// Enable wrapping and set the font
         score.setWrapText(true);
-        score.setStyle("-fx-control-inner-background: black; -fx-text-fill: white;");
+        score.setFont(Font.font("Segoe UI", 18)); // Use a modern font
+
+// Add some styling to make it more attractive
+        score.setStyle("""
+    -fx-control-inner-background: #333; /* Dark gray background */
+    -fx-text-fill: #fff; /* White text */
+    -fx-padding: 10; /* Add some padding */
+    -fx-border-width: 2; /* Add a border */
+    -fx-border-color: #444; /* Dark gray border */
+    -fx-border-radius: 10; /* Rounded corners */
+//    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 0); /* Add a drop shadow */
+""");
+
+// Custom font and color scheme
+
 
 
         tf1 = new TextField("Player 1");
@@ -412,7 +475,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         a3.setLayoutY(400);
         a3.setPrefSize(100, 100);
         //change the path
-        a3.setGraphic(new ImageView(new Image("C://Users//JAGRUTI//Desktop//kirabiz//demo11//cut/dice.gif")));
+        a3.setGraphic(new ImageView(new Image("file:.//cut//dice.gif")));
 
         b1 = new Button("Roll");
         b1.setLayoutX(15);
@@ -446,6 +509,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         b4.setOnAction(this::handle);
         b4.setStyle("-fx-background-color: green; -fx-text-fill: black;");
 
+
         // Font configuration
         Font font = Font.font("Book Antiqua", 20);
         Font font1 = Font.font("Tecton Pro", 26); // Make sure this font is installed on your system
@@ -477,6 +541,42 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
 
     }
 
+    private void startVoice() {
+        if (voice == null) {
+            initializeVoice();
+        }
+        String text = screen.getText();
+        speak(text.isEmpty() ? "Please enter text to convert to speech." : text);
+    }
+
+    private void stopVoiceFunction() {
+        if (voice != null) {
+        voice.deallocate();
+    }
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+        }
+    }
+
+    private void initializeVoice() {
+        System.setProperty("freetts.voices", "com.sun.speech.freetts.en.us.cmu_us_kal.KevinVoiceDirectory");
+        VoiceManager voiceManager = VoiceManager.getInstance();
+        voice = voiceManager.getVoice("kevin16");
+        if (voice != null) {
+            voice.allocate();
+        } else {
+            System.out.println("Voice not found.");
+        }
+    }
+
+
+
+    private void speak(String text) {
+        if (voice != null) {
+            voice.speak(text);
+        }
+    }
+
 
     /**
      * This method removes existing blocks (JLabels) from the game board.
@@ -492,7 +592,12 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             }
         }
     }
-
+    @Override
+    public void stop() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+        }
+    }
     /**
      * Writes the player's score and name to a score file.
      * @param playerName The name of the player.
@@ -537,6 +642,11 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         }
     }
     static void hardLevel() {
+
+        b4.setStyle("-fx-background-color:green; -fx-text-fill: black;");
+        b3.setText("Reset");
+        b3.setLayoutX(50);
+        b3.setPrefSize(100, 35);
         int j = 0;
         l = new Label[101];
         Image image = new Image("file://cut//1.png"); // Replace with your image path
@@ -802,6 +912,13 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
     static void easyLevel()
     {
 
+        b4.disabledProperty();
+        b4.setStyle("-fx-background-color:green; -fx-text-fill: #A9A9A9;");
+        b3.setText("Change Level");
+        b3.setLayoutX(30);
+        b3.setPrefSize(150, 35);
+
+
         int j = 0;
         l = new Label[101];
         Image image = new Image("file://cut//1.png"); // Replace with your image path
@@ -816,9 +933,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(690); // j needs to be defined in your context
             l[i].setLayoutY(210+j*70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==69)
@@ -827,7 +945,8 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setStyle("-fx-text-fill: white;");
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -838,9 +957,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(270 + j * 70);
             l[i].setLayoutY(490);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
 
@@ -852,9 +972,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(270);
             l[i].setLayoutY(210 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==79)
@@ -863,7 +984,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -874,9 +995,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(340 + j * 70);
             l[i].setLayoutY(210);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==85)
@@ -885,7 +1007,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -897,9 +1019,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(620);
             l[i].setLayoutY(280 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
         }
@@ -911,9 +1034,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(340 + j * 70);
             l[i].setLayoutY(420);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==91)
@@ -922,7 +1046,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -933,9 +1057,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(340);
             l[i].setLayoutY(280 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
         }
@@ -946,9 +1071,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(410 + j * 70);
             l[i].setLayoutY(280);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
         }
@@ -959,9 +1085,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(410 + j * 70);
             l[i].setLayoutY(350);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==100)
@@ -970,7 +1097,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -983,9 +1110,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(270 + j * 70);
             l[i].setLayoutY(140);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==62)
@@ -994,7 +1122,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -1007,9 +1135,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(200);
             l[i].setLayoutY(140 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==56)
@@ -1018,7 +1147,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -1030,9 +1159,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(200 + j * 70);
             l[i].setLayoutY(560);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==45)
@@ -1041,7 +1171,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
         }
 
@@ -1052,9 +1182,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(760);
             l[i].setLayoutY(140 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==42)
@@ -1063,7 +1194,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -1077,9 +1208,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(200 + j * 70);
             l[i].setLayoutY(70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==36)
@@ -1088,7 +1220,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -1100,9 +1232,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(200 + j * 70);
             l[i].setLayoutY(0);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==22)
@@ -1111,7 +1244,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(60);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
 
             }
             if(i==23)
@@ -1120,7 +1253,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
             if(i==24)
             {
@@ -1128,7 +1261,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(70);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
         }
         j = 0;
@@ -1140,9 +1273,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(830);
             l[i].setLayoutY(0 + j * 70);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==17)
@@ -1152,7 +1286,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
                 //l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(3))));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
 
         }
@@ -1165,9 +1299,10 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             l[i].setLayoutX(200 + j * 70);
             l[i].setLayoutY(630);
             l[i].setPrefSize(70, 70);
-            l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
+            l[i].setBackground(new Background(new BackgroundFill(Color.DARKBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
             l[i].setText(String.valueOf(i));
-            l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+            l[i].setStyle("-fx-text-fill: white;");
+            l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             root.getChildren().add(l[i]);
             j++;
             if(i==10)
@@ -1176,16 +1311,38 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 imageView.setFitWidth(50);
                 imageView.setFitHeight(70);
                 l[i].setBackground(new Background(new BackgroundFill(null, CornerRadii.EMPTY, Insets.EMPTY)));
-                l[i].setBorder(new Border(new BorderStroke(null,null,null,null)));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK,null,null,null)));
             }
             if(i==1)
             {
                 l[i].setGraphic(new ImageView(new Image("file:.//cut//1.png")));
                 l[i].setBackground(new Background(new BackgroundFill(Color.POWDERBLUE, CornerRadii.EMPTY, Insets.EMPTY)));
                 l[i].setText(String.valueOf(i));
-                l[i].setBorder(new Border(new BorderStroke(Color.BROWN, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
+                l[i].setBorder(new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(1))));
             }
         }
+
+        r = l[1].localToScene(l[1].getBoundsInLocal());
+        y = r.getMinX();
+        z = r.getMinY();
+        x1 = (int) Math.round(y);
+        y1 = (int) Math.round(z);
+        m[2].setLayoutX(x1 + 10);
+        m[2].setLayoutY(y1 + 17);
+        m[2].setPrefWidth(20);
+        m[2].setPrefHeight(52);
+        pc2 = 1;
+
+        r = l[1].localToScene(l[1].getBoundsInLocal());
+        y = r.getMinX();
+        z = r.getMinY();
+        x1 = (int) Math.round(y);
+        y1 = (int) Math.round(z);
+        m[1].setLayoutX(x1 + 15);
+        m[1].setLayoutY(y1 + 17);
+        m[1].setPrefWidth(20);
+        m[1].setPrefHeight(52);
+        pc1 = 1;
 
         m[1].toFront();
         m[2].toFront();
@@ -1234,8 +1391,6 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
      //The main method of the program.
     public static void main(String[] args) {
         launch(args);
-        //displayTopScores();
-
     }
 
 
@@ -1249,7 +1404,15 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
         myimage.setText(String.valueOf(rno));
         a3.setVisible(true);
         System.out.println("random function");
-        screen.setText(String.valueOf("Dice number : "+rno));
+        Platform.runLater(() ->screen.setText(String.valueOf("Dice number : "+rno)));
+
+         voiceActive.set(true);
+         if (voice == null) {
+             initializeVoice();
+         }
+         // Speak the current text
+         String text = " Roll Number is " + rno;
+         speak(text);
 
      }
     /**
@@ -1309,31 +1472,49 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
             //root = new Pane();
             w = 0;
         }
-        else if (e.getSource() == b1) {
+        else if (e.getSource() == b1 && isB1Active ) {
             // Calls the randomNumber() method to
             // generate a random number and update the game interface.
             randomNumber();
             System.out.println("b1 clicked");
+            isB1Active = false;
         }
-        else if(e.getSource()==b4 )
+        else if(e.getSource()==b4)
         {
             //Removes existing blocks, sets the game to Easy Level, and updates the button text.
             // Also triggers actions in the Level class.
 
             // Create an alert with a specific type
+            voiceActive.set(true);
+            if (voice == null) {
+                initializeVoice();
+            }
+            // Speak the current text
+            String text ="Please wait the level is changing";
+            speak(text);
+
             removeExistingBlocks();
             easyLevel();
             b4.setText("Easy Level");
             b4Clicked = true;
+
+            voiceActive.set(true);
+            if (voice == null) {
+                initializeVoice();
+            }
+            // Speak the current text
+            String text1 = "The game has been reset to easy level and is ready to play again";
+            speak(text1);
             //Level.actionPerformeded();
 
         }
-        else if (e.getSource() == b2 && executeB2Conditions) {
+        else if (e.getSource() == b2 && executeB2Conditions && !isB1Active)
+        {
             // Handles player movements based on the dice roll and checks for collisions and obstacles.
             // Adjusts player positions and updates the game interface accordingly
             if (w % 2 == 0) //w=2,pc1=3,rno=2
             {
-                screen.setText(tf2.getText() + " chance");
+                Platform.runLater(() -> screen.setText(tf2.getText() + " chance"));
                 /**
                  * Handles collision and obstacle detection for player movements in the game.
                  * Checks if player 2 collides with player 1 and handles the collision.
@@ -1345,7 +1526,7 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 if ((pc1 + rno) < 101) {
 
                     if (pc2 == pc1 + rno) {
-                        screen.setText(tf1.getText() + " collided!");
+                        Platform.runLater(() ->screen.setText(tf1.getText() + " collided!"));
                         pc2 = 1; // Player 2 returns to the starting position
                         m[2].setLayoutX(70);
                         m[2].setLayoutY(650);
@@ -1618,7 +1799,14 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                         // Handle fire skips in the standard level
                         if (pc1 + rno == 3 || pc1 + rno == 7 || pc1 + rno == 17 || pc1 + rno == 31 || pc1 + rno == 35 || pc1 + rno == 40 || pc1 + rno == 54 || pc1 + rno == 55 || pc1 + rno == 76 || pc1 + rno == 82 || pc1 + rno == 93 || pc1 + rno == 99 && !player1PassedBlock13) {
                             player1PassedBlock13 = true;
-                            screen.setText(tf1.getText() + " fire skips!");
+                            Platform.runLater(() ->screen.setText(tf1.getText() + " fire skips!"));
+                            voiceActive.set(true);
+                            if (voice == null) {
+                                initializeVoice();
+                            }
+                            // Speak the current text
+                            String text = tf1.getText()+" has fallen into the fire pit";
+                            speak(text);
                         } else {
                             // Update player 1's position and display it on the game board
                             w++;
@@ -1634,7 +1822,6 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                             m[1].setLayoutY(y1 + 20);
                             m[1].setPrefWidth(20);
                             m[1].setPrefHeight(52);
-
                             System.out.println("Is m[1] in scene? " + (m[1].getParent() != null));
 
                         }
@@ -1642,7 +1829,15 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                         // Handle fire skips in the advanced level
                         if (pc1 + rno == 10 || pc1 + rno == 17 || pc1 + rno == 36 || pc1 + rno == 45 || pc1 + rno == 69 || pc1 + rno == 79 || pc1+rno==79 && !player1PassedBlock13) {
                             player1PassedBlock13 = true;
-                            screen.setText(tf1.getText() + " fire skips!");
+                            Platform.runLater(() ->screen.setText(tf1.getText() + " fire skips!"));
+
+                            voiceActive.set(true);
+                            if (voice == null) {
+                                initializeVoice();
+                            }
+                            // Speak the current text
+                            String text = tf1.getText()+" has fallen into the fire skips";
+                            speak(text);
                         } else {
 
 
@@ -1683,7 +1878,16 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                                 m[1].setPrefWidth(20);
                                 m[1].setPrefHeight(52);
                                 pc1 = b[i];
-                                screen.setText(tf1.getText() + " blackhole-fall!");
+                                Platform.runLater(() ->screen.setText(tf1.getText() + " blackhole-fall!"));
+
+
+                                voiceActive.set(true);
+                                if (voice == null) {
+                                    initializeVoice();
+                                }
+                                // Speak the current text
+                                String text = tf1.getText()+" fell into the black hole";
+                                speak(text);
 
                             }
                         }
@@ -1712,14 +1916,29 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                                 m[1].setPrefWidth(20);
                                 m[1].setPrefHeight(52);
                                 pc1 = b4[i];
-                                screen.setText(tf1.getText() + " blackhole-fall!");
+                                Platform.runLater(() ->screen.setText(tf1.getText() + " blackhole-fall!"));
+
+                                voiceActive.set(true);
+                                if (voice == null) {
+                                    initializeVoice();
+                                }
+                                // Speak the current text
+                                String text = tf1.getText()+" fell into the black hole";
+                                speak(text);
 
                             }
                         }
                     }
                 }
             } else {
-                screen.setText(tf1.getText() + " chance");
+                Platform.runLater(() ->screen.setText(tf1.getText() + " chance"));
+                voiceActive.set(true);
+                if (voice == null) {
+                    initializeVoice();
+                }
+                // Speak the current text
+                String text = tf1.getText()+" fell into the Spike Zone.";
+                speak(text);
 
                 if ((pc2 == 13 && (pc2 + rno == 22))) {
                     rno = 0;
@@ -1979,12 +2198,21 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 //code for collision for player
                 if ((pc2 + rno) < 101) {
                     if (pc1 == pc2 + rno) {
-                        screen.setText(tf2.getText() + " collided!");
+                        Platform.runLater(() ->screen.setText(tf2.getText() + " collided!"));
                         pc1 = 1; // Player 1 returns to the starting position
                         m[1].setLayoutX(140);
                         m[1].setLayoutY(650);
                         m[1].setPrefWidth(20);
                         m[1].setPrefHeight(52);
+
+                        voiceActive.set(true);
+                        if (voice == null) {
+                            initializeVoice();
+                        }
+                        // Speak the current text
+                        String text1 = tf2.getText()+" collided ";
+                        speak(text1);
+
                     }
 
                     if (!b4Clicked) {
@@ -1993,6 +2221,15 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                         if (skipTurn) {
                             player2PassedBlock13 = true;
                             screen.setText(tf2.getText() + " fire skips!");
+
+                            voiceActive.set(true);
+                            if (voice == null) {
+                                initializeVoice();
+                            }
+                            // Speak the current text
+                            String text1 = tf2.getText()+" has fallen into the fire skips";
+                            speak(text1);
+
                         } else {
                             // Handle skipping turns for player 2 in the advanced level
                             w++;
@@ -2015,7 +2252,16 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                         boolean skipTurn = (pc2 + rno == 10 || pc2 + rno == 17 || pc2 + rno == 36 || pc2 + rno == 45 || pc2 + rno == 69 || pc2 + rno == 79 && !player2PassedBlock13);
                         if (skipTurn) {
                             player2PassedBlock13 = true;
-                            screen.setText(tf2.getText() + " fire skips!");
+                            Platform.runLater(() ->screen.setText(tf2.getText() + " fire skips!"));
+
+                            voiceActive.set(true);
+                            if (voice == null) {
+                                initializeVoice();
+                            }
+                            // Speak the current text
+                            String text1 = tf2.getText()+" has fallen into the fire skips";
+                            speak(text1);
+
                         } else {
 
                             w++;
@@ -2049,7 +2295,15 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                                 m[2].setPrefWidth(20);
                                 m[2].setPrefHeight(52);
                                 pc2 = b[i];
-                                screen.setText(tf2.getText() + " blackhole fall!");
+                                Platform.runLater(() -> screen.setText(tf2.getText() + " blackhole fall!"));
+
+                                voiceActive.set(true);
+                                if (voice == null) {
+                                    initializeVoice();
+                                }
+                                // Speak the current text
+                                String text1 = tf2.getText()+" fell into the blackhole";
+                                speak(text1);
                             }
                         }
                     } else {
@@ -2068,6 +2322,13 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                                 m[2].setPrefWidth(20);
                                 pc2 = b[i];
                                 screen.setText(tf2.getText() + " blackhole fall!");
+                                voiceActive.set(true);
+                                if (voice == null) {
+                                    initializeVoice();
+                                }
+                                // Speak the current text
+                                String text1 = tf2.getText()+" fell into the blackhole";
+                                speak(text1);
                             }
                         }
                     }
@@ -2075,24 +2336,41 @@ public class javafx extends Application implements EventHandler<ActionEvent>{
                 }
             }
             if (pc1 == 100) {
-                screen.setText(tf1.getText() + " wins!");
+                Platform.runLater(() -> screen.setText(tf1.getText() + " wins!"));
                 javafx.writeScoreToFile(String.valueOf(tf1.getText()), pc1);
                 javafx.writeScoreToFile(String.valueOf(tf1.getText()),pc2);
                 javafx.displayTopScores();
+                voiceActive.set(true);
+                if (voice == null) {
+                    initializeVoice();
+                }
+                // Speak the current text
+                String text1 = "Congratulations"+tf1.getText()+" wins";
+                speak(text1);
                 Timeline timeline = new Timeline(new KeyFrame(Duration.millis(3000), event -> System.exit(10)));
                 timeline.setCycleCount(1); // Equivalent to non-repeating in Swing Timer
                 timeline.play();
 
+
             } else if (pc2 == 100) {
-                screen.setText(tf2.getText() + " wins!");
+                Platform.runLater(() ->screen.setText(tf2.getText() + " wins!"));
 
                 javafx.writeScoreToFile(String.valueOf(tf2.getText()), pc2);
                 javafx.writeScoreToFile(String.valueOf(tf1.getText()),pc1);
                 javafx.displayTopScores();
+                voiceActive.set(true);
+                if (voice == null) {
+                    initializeVoice();
+                }
+                // Speak the current text
+                String text1 = "Congratulations"+tf2.getText()+" wins";
+                speak(text1);
                 Timeline timeline = new Timeline(new KeyFrame(Duration.millis(3000), event -> System.exit(10)));
                 timeline.setCycleCount(1); // Equivalent to non-repeating in Swing Timer
                 timeline.play();
             }
+            System.out.println("b2 clicked");
+            isB1Active = true;
         }
         }
 }
@@ -2151,8 +2429,8 @@ class GameResultApp extends Application {
         primaryStage.setScene(new Scene(root, 300, 200));
         primaryStage.show();
 
-        int pc1 = 100; // Replace with the actual value
-        int pc2 = 100; // Replace with the actual value
+        int pc1 = 100;
+        int pc2 = 100;
 
         if (pc1 == 100) {
             String winnerName = player1Name;
