@@ -33,8 +33,8 @@ Player 2 is represented by the Gottiyo (Tokens) with the label "Player 2."
 The game ends when one of the players reaches square 100. The winning player is displayed on the screen.
 
 ## Libraries Requirement
-torch==2.0.1.
-torchvision==0.15.2.
-ultralytics==8.0.121.
+- `torch==2.0.1`
+- `torchvision==0.15.2`
+- `ultralytics==8.0.121`
 
 
