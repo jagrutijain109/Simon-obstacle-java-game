@@ -36,5 +36,11 @@ The game ends when one of the players reaches square 100. The winning player is 
 - `torch==2.0.1`
 - `torchvision==0.15.2`
 - `ultralytics==8.0.121`
+- `flask`
+- `opencv-python`
+- `SQLite3`
+- `request`
+- `numpy`
+
 
 
